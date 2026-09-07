@@ -1,0 +1,5 @@
+.env
+conquest-db/
+conquest-data/
+conquest-src/
+*.log

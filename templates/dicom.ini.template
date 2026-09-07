@@ -1,0 +1,51 @@
+[sscscp]
+MicroPACS                = sscscp
+Edition                  = Personal
+
+MyACRNema                = ${CONQUEST_AET}
+TCPPort                  = ${CONQUEST_PORT}
+
+ACRNemaMap               = acrnema.map
+
+kFactorFile              = dicom.sql
+SOPClassList             = dgatesop.lst
+
+SQLHost                  = ${MYSQL_HOST}
+SQLServer                = ${MYSQL_DATABASE}
+Username                 = ${MYSQL_USER}
+Password                 = ${MYSQL_PASSWORD}
+
+MySQL                    = 1
+PostGres                 = 0
+SqLite                   = 0
+
+DoubleBackSlashToDB      = 1
+UseEscapeStringConstants = 0
+UTF8ToDB                 = 1
+
+# The PHP web layer runs in this same container, so the control channel
+# never has to leave the loopback interface.
+WebServerFor             = 127.0.0.1
+WebScriptAddress         = /app/newweb
+
+ImportExportDragAndDrop  = 1
+ZipTime                  = 05:
+UIDPrefix                = 99999.99999
+EnableComputedFields     = 1
+
+FileNameSyntax           = 4
+
+DroppedFileCompression   = un
+IncomingCompression      = un
+ArchiveCompression       = as
+
+PACSName                 = ${CONQUEST_AET}
+OperatorConsole          = 127.0.0.1
+DebugLevel               = 2
+
+MAGDeviceFullThreshold   = 30
+MAGDevices               = 1
+MAGDevice0               = ${DICOM_DATA_PATH}/
+
+[lua]
+association = package.path=package.path..';'..Global.basedir..'lua/?.lua'

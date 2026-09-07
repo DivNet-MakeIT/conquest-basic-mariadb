@@ -1,0 +1,40 @@
+services:
+  conquest-db:
+    image: mariadb:11.8
+    container_name: conquest-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MYSQL_DATABASE}
+      MARIADB_USER: ${MYSQL_USER}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./conquest-db:/var/lib/mysql
+    # Bound to loopback only. Conquest runs in the host network namespace and
+    # reaches the database at 127.0.0.1; nothing on the LAN can see this port.
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  conquest:
+    build: .
+    image: conquest-basic
+    container_name: conquest
+    restart: unless-stopped
+    # The host's own interface. DICOM (${CONQUEST_PORT}) and the web UI
+    # (${HTTP_PORT}) are served straight on the host address - no macvlan,
+    # no extra network to create, no reverse proxy.
+    network_mode: host
+    env_file:
+      - .env
+    volumes:
+      - ./conquest-src:/opt/conquest
+      - ./conquest-data:/data/dicom
+    depends_on:
+      conquest-db:
+        condition: service_healthy
