@@ -1,0 +1,52 @@
+# Variant for Docker Desktop on Windows and macOS.
+#
+# There, Linux containers run inside a Linux VM, so "the host" in
+# network_mode: host is that VM and not your desktop. A container that binds a
+# port is then reachable from inside the VM only. Docker Desktop has an opt-in
+# host networking setting, but published ports work everywhere and need no
+# setting, so this variant uses them.
+#
+#   docker compose -f docker-compose.desktop.yml up -d --build
+#
+# Difference from the default file: both containers sit on a normal bridge,
+# Conquest publishes its two ports, and it reaches MariaDB by service name
+# instead of over loopback.
+
+services:
+  conquest-db:
+    image: mariadb:11.8
+    container_name: conquest-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MYSQL_DATABASE}
+      MARIADB_USER: ${MYSQL_USER}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./conquest-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  conquest:
+    build: .
+    image: conquest-basic
+    container_name: conquest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # On a bridge the database is a service name, not loopback.
+      MYSQL_HOST: conquest-db
+    ports:
+      - "${CONQUEST_PORT:-4006}:${CONQUEST_PORT:-4006}"
+      - "${HTTP_PORT:-8080}:${HTTP_PORT:-8080}"
+    volumes:
+      - ./conquest-src:/opt/conquest
+      - ./conquest-data:/data/dicom
+    depends_on:
+      conquest-db:
+        condition: service_healthy

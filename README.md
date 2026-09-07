@@ -14,11 +14,16 @@ different and much larger piece of work — this is deliberately not it.
 
 ## Requirements
 
-- Linux host. The Conquest container uses `network_mode: host`, which behaves as
-  described only on Linux; on Docker Desktop for macOS or Windows the container would
-  not share the host's interfaces.
-- Docker with the Compose plugin.
-- Roughly 2 GB of free disk for the build, plus whatever your images need.
+- Docker with the Compose plugin, and roughly 2 GB of free disk for the build.
+- **Linux** for the default file, which uses `network_mode: host`. On Docker Desktop for
+  Windows and macOS your Linux containers run inside a Linux VM, so "the host" there is
+  that VM rather than your desktop, and a container binding a port is reachable only from
+  inside it. Use `docker-compose.desktop.yml` instead — same two services, published
+  ports rather than host networking:
+
+  ```sh
+  docker compose -f docker-compose.desktop.yml up -d --build
+  ```
 
 ## Quick start
 
@@ -34,14 +39,23 @@ docker compose logs -f conquest
 The first start clones and compiles Conquest, which takes a few minutes. When the log
 reaches the dgate banner, the server is listening.
 
-- Web interface: `http://<host>:8080/` (`HTTP_PORT`)
+- Web interface: **`http://<host>:8080/app/newweb/`** (`HTTP_PORT`). The document root
+  itself serves Apache's default page — Conquest's own pages live under `/app/`, and
+  `/papaya/` and `/weasis/` are there too.
 - DICOM: port `4006` on the host (`CONQUEST_PORT`), AE title from `CONQUEST_AET`
 
 Check it from another machine with any DICOM tool, for example:
 
 ```sh
-echoscu -aec CONQUESTSRV1 <host> 4006
+echoscu -v <host> 4006 -aec CONQUESTSRV1 -aet TESTSCU
 ```
+
+A successful run ends with `Received Echo Response (Success)`.
+
+During the build you will see `configure: error: ... C compiler cannot create executables`
+and a `make: *** [Makefile:205: install] Error 1` between maklinux's own
+`#### Please ignore the errors below` / `above` markers. That is expected: it comes from an
+optional codec's configure step, and dgate itself still builds.
 
 ## Configuration
 
